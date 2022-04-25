@@ -1,0 +1,97 @@
+# Setup test variables
+- name: Set variables for test run
+  set_fact:
+    test:
+      service_charm_name: glance
+      charm_name: charm-glance
+      repo: https://opendev.org/openstack/charm-glance.git
+      refspec: refs/changes/60/835260/8 
+      override_commit_mesage_file: /root/branches/test-commit-msg
+    tox_executable: /usr/bin/tox
+    needs_charm_build: true
+    build_type: charmcraft
+    tox_environment:
+      HTTP_PROXY: "http://squid.internal:3128"
+      HTTPS_PROXY: "http://squid.internal:3128"
+    tox_constraints_env:
+      unused: "unused"
+
+# Install packages
+- name: Install git-review
+  apt:
+    name: git-review
+    state: present
+
+- name: Install tox
+  apt:
+    name: tox
+    state: present
+
+# Clone branche and apply PR
+
+- name: Setup charm test dir
+  file:
+    path: /root/charm-test-dir
+    state: directory
+    mode: '0755'
+
+- name: Stat the charm test dir
+  stat:
+    path: /root/charm-test-dir/{{ test.service_charm_name }}
+  register: charm_dir
+
+- name: Git clone repo
+  shell: git clone {{ test.repo }} {{ test.service_charm_name }}
+  args:
+    chdir: /root/charm-test-dir
+  when: not charm_dir.stat.exists
+
+- name: Git download patch
+  shell: git fetch {{ test.repo }} {{ test.refspec }} && git checkout FETCH_HEAD
+  args:
+    chdir: /root/charm-test-dir/{{ test.service_charm_name }}
+  when: not charm_dir.stat.exists
+
+# Collect commit message from override file or repo
+
+- name: Look for commit message file
+  stat:
+    path: "{{ test.override_commit_mesage_file }}"
+  register: commit_msg_file
+
+- name: Read commit message
+  slurp:
+    src: "{{ test.override_commit_mesage_file }}"
+  register: commit_message
+  when: commit_msg_file.stat.exists
+
+- name: Set file commit message var
+  set_fact:
+    test_commit_message: "{{ commit_message.content }}"
+  when: commit_msg_file.stat.exists
+
+- name: Read commit message from branch
+  shell: git log -1
+  args:
+    chdir: /root/charm-test-dir/{{ test.service_charm_name }}
+  register: repo_commit_msg
+  when: test_commit_message is not defined
+
+- name: Set zuul var p2
+  set_fact:
+    test_commit_message: "{{ repo_commit_msg | b64encode }}"
+  when: test_commit_message is not defined
+
+# Set zuul vars
+- name: Set zuul vars
+  set_fact:
+    zuul:
+      buildset: b123
+      project:
+        src_dir: /root/charm-test-dir/{{ test.service_charm_name }}
+        short_name: "{{ test.charm_name }}"
+      message: "{{ test_commit_message }}}"
+
+- name: Show zuul vars
+  debug:
+    msg: Using zuul {{ zuul }}

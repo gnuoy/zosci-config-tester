@@ -1,0 +1,4 @@
+- hosts: all
+  roles:
+    - setup-test-env
+    - handle-func-test-pr

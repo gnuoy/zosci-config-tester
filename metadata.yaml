@@ -1,0 +1,24 @@
+# Copyright 2022 Ubuntu
+# See LICENSE file for licensing details.
+
+# For a complete list of supported options, see:
+# https://juju.is/docs/sdk/metadata-reference
+name: zosci-config-tester
+display-name: |
+  Zosci Config Tester
+description: |
+  Testing zosci config
+summary: |
+  Testing zosci config
+series:
+  - focal
+  - jammy
+  - xenial
+
+requires:
+  test-runner:
+    interface: zosci-test-runner
+provides:
+  test-coordinator:
+    interface: zosci-test-runner
+
