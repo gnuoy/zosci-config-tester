@@ -158,7 +158,7 @@ class ZosciConfigTesterCharm(CharmBase):
         self.update_authorized_keys()
         self.write_hosts()
         self.update_known_hosts()
-        return
+        self.unit.status = ActiveStatus()
 
 
 if __name__ == "__main__":

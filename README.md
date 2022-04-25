@@ -14,9 +14,13 @@ To avoid having two different charms (one for the coordinator and one for the
 targets) this charm does both. This also allows the coordinator to be a
 different ubuntu release from the target.
 
-    juju deploy --series focal zosci-config-tester coordinator
-    juju deploy --series xenial zosci-config-tester xenial-target
-    juju add-relation focal-zosci-config-tester:test-coordinator xenial-zosci-config-tester:test-runner
+    juju deploy --channel edge --series focal zosci-config-tester coordinator
+    juju deploy --force --channel edge --series xenial zosci-config-tester xenial-target
+    juju add-relation coordinator:test-coordinator xenial-target:test-runner
+
+or to use the bundle in the charm:
+
+    juju deploy --force $(pwd)/bundle.yaml
 
 Ansible can be run on any of the units which are bionic+ and which hosts ansible then
 targets is controlled by `/root/branches/hosts`. Xenial can be used as a target
@@ -64,8 +68,8 @@ PR. To do this add the desired commit message to
 
 To run ansible:
 
+    juju ssh coordinator/0
+    sudo su -
     export ANSIBLE_ROLES_PATH=/root/branches/zuul-jobs/roles:/root/branches/zosci-config/roles/
     cd /root/branches
     ansible-playbook -i hosts test-pb.yaml
-
-
